@@ -3,7 +3,7 @@ import pymysql
 try:
     conn = pymysql.Connect(
                 user = 'pyuser',
-                password='VMware1!',
+                password='',
                 host = "192.168.208.240",
                 port = 3306,
                 database = 'DevOps'
