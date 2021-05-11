@@ -16,3 +16,5 @@ cur = conn.cursor()
 cur.execute('''select * from Ssilog''')
 data = cur.fetchall()
 print(data)
+
+print('hello,python'*99)
