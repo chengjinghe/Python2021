@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-from yishion.he_Auto import Auto
 from pathlib import Path
 from shutil import copyfile
 import os,time,socket,sys,re
 import multiprocessing
-from pathlib import PurePath
 from shutil import copytree
 from marsql import MarDB
 from yishion.he_yishionRegedit import YshionRegedit
 from yishion.he_yishionSys import YishionSys
 from yishion.he_yishionTools import YishionTime
 from yishion.he_psutil import yishionPsutil
+from yishion.he_Auto import Auto
+
 '''
 v2.8.3 优化代码实现流程
  1 加入CAC物料系统，车辆管理系统安装
@@ -59,7 +59,7 @@ class Install(YishionSys,YishionTime,MarDB,YshionRegedit,yishionPsutil):
                 print(f'{self.Program_Files}\Locate32--放大镜搜索工具-已复制完成')
                 locate32_lnk = os.path.join(self.get_desktop,'locate32.lnk')#生成locate32.exe桌面快捷方式路径
                 os.symlink(os.path.join(Locate32_local_path,'locate32.exe'),locate32_lnk)#创建locate32.exe桌面快捷方式
-                os.popen(os.path.join(Locate32_local_path,'locate32.exe'))#启动搜索工具软件
+                # os.popen(os.path.join(Locate32_local_path,'locate32.exe'))#启动搜索工具软件
         except Exception as Locate32_copy_err:
             print(self.currentTime,Locate32_copy_err)
 
@@ -145,12 +145,11 @@ class Install(YishionSys,YishionTime,MarDB,YshionRegedit,yishionPsutil):
                             else:
                                 pass                  
                         else:
-                            rmessage = os.popen(str(software_root_path[0]) +" /s")
-                            time.sleep(0.1)                                       
+                            os.system(str(software_root_path[0]) +" /s")                                      
                             sys_install_values1 = (f"!!正在安装{name}!!!")
                             print(self.currentTime,sys_install_values1)
                             if self.writeDataBase == True:
-                                self.ssiinsert(host=localhostname,message=str(rmessage.buffer) + str(rmessage.errors),time=self.marTime,ip=local_ip)    
+                                self.ssiinsert(host=localhostname,message=str(sys_install_values1),time=self.marTime,ip=local_ip)    
                             else:
                                 pass                             
                     except Exception as sys_install_err1:                  
@@ -198,7 +197,8 @@ class Install(YishionSys,YishionTime,MarDB,YshionRegedit,yishionPsutil):
             #执行其他系统更新
             try:
                 for updataindex,updatafile in enumerate(full_update_file_path):
-                    # os.popen(str(updatafile))
+                    os.popen(str(updatafile))
+                    time.sleep(0.3)
                     updatavalues = (f"正在更新{updatafile}")
                     print(self.currentTime,updatavalues)
                     if self.writeDataBase == True:                
@@ -218,7 +218,7 @@ class Install(YishionSys,YishionTime,MarDB,YshionRegedit,yishionPsutil):
                     #复制板房更新文件到本地
                     copyfile(banfangupdate_file_CACUpdate_path,banfang_Program_Files_x86)
                     #执行板房文件更新
-                    # os.popen(banfang_Program_Files_x86)
+                    os.popen(banfang_Program_Files_x86)
                     copy_banfang_updata_x32_ok_values1 = ("板房更新文件，复制到32位文件夹成功")
                     print(self.currentTime,copy_banfang_updata_x32_ok_values1)
                     if self.writeDataBase == True:
@@ -229,14 +229,14 @@ class Install(YishionSys,YishionTime,MarDB,YshionRegedit,yishionPsutil):
                     copyfile(banfangupdate_file_CACUpdate_path,banfangpath_file_local)
                     copy_banfang_updata_x64_ok_values1 = ("板房更新文件，复制到64位文件夹成功")
                     print(self.currentTime,copy_banfang_updata_x64_ok_values1)
-                    # os.popen(banfangpath_file_local)
+                    os.popen(banfangpath_file_local)
                     if self.writeDataBase == True:
                         self.ssiinsert(host=localhostname,time=self.marTime,message=copy_banfang_updata_x64_ok_values1,ip=local_ip)
                     else:
                         pass
-            except:           
+            except Exception as e:           
                 banfang_updata_Err1_values1 = ("板房更新文件复制失败，请手动复制更新")
-                print(self.currentTime,banfang_updata_Err1_values1)
+                print(self.currentTime,banfang_updata_Err1_values1,e)
                 if self.writeDataBase == True:
                     self.ssiinsert(host=localhostname,time=self.marTime,error=banfang_updata_Err1_values1,ip=local_ip)
                 else:
@@ -250,28 +250,22 @@ class Install(YishionSys,YishionTime,MarDB,YshionRegedit,yishionPsutil):
                 pass
 
 #执行常办公软件安装
-    def sftInstall(self):
-        autoSoftwareList = ['rtxcsetup.exe','realvncsetup.exe','sougouwubi.exe']
-        software_patn = os.path.join(self.Work_directory_NetWork, "factory_Software")#软件查询目录
-        if os.access(software_patn,os.F_OK):
+    def sftInstall(self,affirm):
+        autoRunAllSftwarelist = ['WeChatSetup.exe','WeCom.exe','rtxcsetup.exe','realvncsetup.exe','sougouwubi.exe','AdbeRdr930.exe','pdfprochs.exe',
+                            'zip360setup.exe','sougoupingying.exe','FirefoxSetup.exe','ChromeStandalone.exe','zzskylarinst-winc(192.168.0.36_80).exe']
+        if os.access(self.sftNetworkRoot(),os.F_OK):
             try:            
-                full_software_list = sorted(Path(software_patn).glob('**/*.exe'))
-                for sft_index,name in enumerate(full_software_list):
-                    if name.name  not in autoSoftwareList:
-                        continue
-                    else:
-                        Software_install_values = (f"正在安装{name}")
-                        os.popen(str(name))
-                        time.sleep(60)
-                        #进程检测是否存活
-                        while True:
-                            time.sleep(5)
-                            procData = self.pid(procNameList=[name.name])
-                            if procData == []:
-                                break         
-                    print(self.currentTime,Software_install_values)
+                for nameindex,name in enumerate(autoRunAllSftwarelist):
+                    os.system(str(os.path.join(self.sftNetworkRoot(),name)))
+                    time.sleep(30)
+                    #进程检测是否存活
+                    while True:
+                        affirm1 = affirm.get()#判断监控操作进程是否返回确认完成数据
+                        if affirm1 == name:
+                            break
+                        pass              
                     if self.writeDataBase == True:
-                        self.ssiinsert(host=localhostname,time=self.marTime,message=Software_install_values,ip=local_ip)
+                        self.ssiinsert(host=localhostname,time=self.marTime,message=str(name),ip=local_ip)
                     else:
                         pass
             except Exception as err:
@@ -288,95 +282,48 @@ class Install(YishionSys,YishionTime,MarDB,YshionRegedit,yishionPsutil):
                 self.ssiinsert(host=localhostname,time=self.marTime,error=software_patn_err,ip=local_ip)
             else:
                 pass
-
-#office安装 和 CAC注册表写入
-    def Other_sft_install(self):
-        try:    
-            # os.system(r"\\192.168.208.1\Python\Office_2007\MicrosoftOfficeProfessionalPlus2007\Setup.exe")
-            office2007_startup_ok = ("Microsoftware Office 2007 已经成功启动！")
-            print(self.currentTime,office2007_startup_ok)
-            if self.writeDataBase == True:
-                self.ssiinsert(host=localhostname,time=self.marTime,message=office2007_startup_ok,ip=local_ip)
-            else:
-                pass
-        except:
-            office2007_install_Err = ("office 安装错误 请手动执行！")
-            print(office2007_install_Err)
-            if self.writeDataBase == True:
-                self.ssiinsert(host=localhostname,error=office2007_startup_ok,time=self.marTime,ip=local_ip)
-            else:
-                pass
-            
-        try:
-            # os.system(r"\\192.168.208.1\Python\factory_Sys\所有CAC数据库注册表.reg")
-            Cac_Reg_Open_ok = ('CAC默认注册表文件已经成功打开!!')
-            print(self.currentTime,Cac_Reg_Open_ok)
-            if self.writeDataBase == True:
-                self.ssiinsert(host=localhostname,time=self.marTime,message=Cac_Reg_Open_ok,ip=local_ip)
-            else:
-                pass
-        except:
-            Cac_Reg_Open_Err = ("CAC注册表未成功写入！，请手动执行")
-            print(self.currentTime,Cac_Reg_Open_Err)
-            if self.writeDataBase == True:
-                self.ssiinsert(host=localhostname,time=self.marTime,error=Cac_Reg_Open_Err,ip=local_ip)
-            else:
-                pass
-            
-        #关闭key文件
-        close_key_file = ('请关闭SN文件')
-        print(self.currentTime,close_key_file)
-        if self.writeDataBase == True:
-            self.ssiinsert(host=localhostname,time=self.marTime,message=close_key_file,ip=local_ip)
-        else:
-            pass
-
-        #程序执行完成
-        Setup_flish = ("程序执行完成")
-        print(self.currentTime,Setup_flish)
-        if self.writeDataBase == True:
-            self.ssiinsert(host=localhostname,time=self.marTime,message=Setup_flish,ip=local_ip)
-        else:
-            pass
-
-        #360企业版安装
-        try:
-            se360 = '"\\192.168.208.1\Python\factory_Software\skylarinst-winc(192.168.0.36_80).exe"'
-            # os.startfile(se360)#单独启动se360
-            se360tianqin = '360天擎已经启动'
-            print(se360,'已经启动')
-            if self.writeDataBase == True:
-                self.ssiinsert(host=localhostname,time=self.marTime,message=se360tianqin,ip=local_ip)
-            else:
-                pass
-        except:
-            pass
+    
+    def sysProckill(self):
+        '''结果指定的进程'''
+        for proc in self.SyslocalRootPath():
+            procNmae = proc.split('\\')[-1]
+            try:
+                self.kill(procNmae)
+                print(f"{procNmae} 进程已执行完成清理")
+            except Exception as e:
+                time.sleep(2)
+                self.kill(procNmae)
+        print('进程已清理！')
 
 Mar = Install(writeDataBase=False)#实例化 
 autoinstall = Auto()
 if __name__=='__main__':
     multiprocessing.freeze_support()
     network= r'\\192.168.208.1\Python'
-    synetwork = r'\\192.168.0.17\CACUpdate'
-    if os.access(network,os.F_OK) and os.access(synetwork,os.F_OK):
-        monitoring = multiprocessing.Process(target=autoinstall.goInt)
-        monitoring.start()
+    # synetwork = r'\\192.168.0.17\CACUpdate'
+    # if os.access(network,os.F_OK) and os.access(synetwork,os.F_OK):
+    if os.access(network,os.F_OK): #and os.access(synetwork,os.F_OK):
         # YshionRegedit.setDateTime
         # YshionRegedit.setIE208
         # YshionRegedit.setWindowsUAC
         # YshionRegedit.visualFXSetting
         # Mar.localruntime()
-        # Mar.info()
         # Mar.Locate32_software()
+        # Mar.info()
         # Mar.sys_install()
+        # print('正在完成系统安装...')
         # Mar.sys_update()
-        # print('='*60)
-        # print('正在系统程序更新')
-        # time.sleep(30)
-        Mar.sftInstall()
-        # print('='*60)
-        # print('正在等待安装软件')
-        # Mar.Other_sft_install()
+        # time.sleep(40)
+        # print('准备执行进程清理...')
+        # syskill = multiprocessing.Process(target=Mar.sysProckill)
+        # syskill.start()
+        # syskill.join()
+        affirmQueue = multiprocessing.Queue()
+        goInt = multiprocessing.Process(target=autoinstall.goInt,args=(affirmQueue,))
+        sftinstall = multiprocessing.Process(target=Mar.sftInstall,args=(affirmQueue,))
+        goInt.start()
+        sftinstall.start()
+        sftinstall.join()
     else:  
         Network_values = ('请检查网络或共享设置(0.17 和 208.1)，请手动执行软件安装，或稍后再试')
         print(Network_values) 
